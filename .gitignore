@@ -1,0 +1,5 @@
+*/.vscode/*
+*.wav
+*/resource/*
+.Ds*
+*.pyc
