@@ -3,9 +3,6 @@
 # 2. 接收录音音频，返回识别结果
 # 3. 接收ASR识别结果，返回NLP对话结果
 # 4. 接收NLP对话结果，返回TTS音频
-from email.mime import audio
-import imp
-from telnetlib import Telnet
 from pydantic import BaseModel
 from typing import Optional, List 
 import uvicorn
@@ -18,17 +15,29 @@ import aiofiles
 import datetime
 from queue import Queue
 from WebsocketManeger import ConnectionManager
+from AudioManeger import AudioMannger
+import base64
 
 
 app = FastAPI()
 chatbot = Robot()
 chatbot.init()
 manager = ConnectionManager()
+aumanager = AudioMannger(chatbot)
+aumanager.init()
 
 
-class ChunkModel(BaseModel):
-    chunk: str
+class NlpBase(BaseModel):
+    chat: str
 
+class TtsBase(BaseModel):
+    text: str 
+
+class Audios:
+    def __init__(self) -> None:
+        self.audios = b""
+
+audios = Audios()
 
 vad_bd = -1
 source_dir = "source"
@@ -46,9 +55,6 @@ async def speech2textOffline(files: List[UploadFile]):
         # 生成时间戳
         now_name = datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d%H%M%S') + randName() + ".wav"
         out_file_path = os.path.join(source_dir, now_name)
-        # if file.filename.endswith(".wav"):
-            # 只接收wav文件
-            # 检查文件是否存在
         async with aiofiles.open(out_file_path, 'wb') as out_file:
             content = await file.read()  # async read
             await out_file.write(content)  # async write
@@ -67,23 +73,61 @@ async def speech2textOnlineRecive(files: List[UploadFile]):
     for file in files:
         content = await file.read()
         audio_bin += content
-    print(f"接收的数据流大小: {len(audio_bin)}")
+    audios.audios += audio_bin
+    print(f"audios长度变化: {len(audios.audios)}")
     return SuccessRequest(message="接收成功")
+
+# 采集环境噪音大小
+@app.post("/asr/collectEnv")
+async def collectEnv(files: List[UploadFile]):
+     for file in files[:1]:
+        content = await file.read()  # async read
+        # 初始化, wav 前44字节是头部信息
+        aumanager.compute_env_volume(content[44:])
+        return SuccessRequest(message="采集环境噪音成功")
+
+# 停止录音
+@app.get("/asr/stopRecord")
+async def stopRecord():
+    now_name = datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d%H%M%S') + randName() + ".pcm"
+    out_file_path = os.path.join(source_dir, now_name)
+    async with aiofiles.open(out_file_path, 'wb') as out_file:
+        await out_file.write(audios.audios)  # async write
+    print(f"接收的数据流大小: {len(audios.audios)}")
+    audios.audios = b""
+    aumanager.stop()
+    print("Online录音暂停")
+    return SuccessRequest(message="停止成功")
+
+# 恢复录音
+@app.get("/asr/resumeRecord")
+async def resumeRecord():
+    aumanager.resume()
+    print("Online录音恢复")
+    return SuccessRequest(message="Online录音恢复")
+
 
 # websocket 传递识别文本
 @app.websocket("/ws/{user}")
 async def websocket_endpoint(websocket: WebSocket, user: str):
-
     await manager.connect(websocket)
 
     try:
         while True:
+            asr_res = None
             # websocket 不接收，只推送
+            
             data = await websocket.receive_bytes()
+            # 前端收到数据
+            print("前端get")
             # 用 websocket 流式接收音频数据
-            # await manager.send_personal_message(f"你说了: {data}", websocket)
-            # await manager.broadcast(f"用户:{user} 说: {data}")
-            # print(f"你说了: {data}")
+            if not aumanager.is_pause:
+                asr_res = aumanager.stream_asr(data)
+            else:
+                print("录音暂停")
+            if asr_res:
+                await manager.send_personal_message(asr_res, websocket)
+                aumanager.clear_asr()
 
     except WebSocketDisconnect:
         manager.disconnect(websocket)
@@ -92,7 +136,8 @@ async def websocket_endpoint(websocket: WebSocket, user: str):
 
 
 @app.post("/nlp/chat")
-async def chatOffline(chat:str):
+async def chatOffline(nlp_base:NlpBase):
+    chat = nlp_base.chat
     if not chat:
         return ErrorRequest(message="传入文本为空")
     else:
@@ -100,16 +145,19 @@ async def chatOffline(chat:str):
         return SuccessRequest(result=res)
 
 
-@app.post("/tts")
-async def text2speechOffline(text:str):
+@app.post("/tts/offline")
+async def text2speechOffline(tts_base:TtsBase):
+    text = tts_base.text
     if not text:
         return ErrorRequest(message="文本为空")
     else:
         now_name = datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d%H%M%S') + randName() + ".wav"
         out_file_path = os.path.join(source_dir, now_name)
         chatbot.text2speech(text, outpath=out_file_path)
-        # 把文件返回去
-        return FileResponse(out_file_path, filename=now_name)
+        with open(out_file_path, "rb") as f:
+            data_bin = f.read()
+        base_str = base64.b64encode(data_bin)
+        return SuccessRequest(result=base_str)
 
 
 

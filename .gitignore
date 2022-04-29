@@ -3,3 +3,5 @@
 */resource/*
 .Ds*
 *.pyc
+*.pcm
+*.npy

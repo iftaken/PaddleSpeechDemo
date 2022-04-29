@@ -1,0 +1,12 @@
+aiofiles==0.8.0
+fastapi==0.75.2
+librosa==0.8.1
+numpy==1.21.5
+paddlenlp==2.2.6
+paddlenlp.egg==info
+paddlespeech==0.2.0
+pydantic==1.9.0
+scikit_learn==1.0.2
+SoundFile==0.10.3.post1
+starlette==0.17.1
+uvicorn==0.17.6

@@ -65,8 +65,12 @@ class Robot:
         return res
     
     def text2speech(self, text, outpath):
-        self.tts_model.infer(text=text, lang="zh", am=self.am_name, spk_id=0)
-        res = self.tts_model.postprocess(output=outpath)
+        try:
+            self.tts_model.infer(text=text, lang="zh", am=self.am_name, spk_id=0)
+            res = self.tts_model.postprocess(output=outpath)
+        except Exception as e:
+            print(e)
+            res = None
         return res
 
     def chat(self, text):
@@ -79,6 +83,9 @@ if __name__ == '__main__':
     robot = Robot()
     robot.init()
     # robot.start()
-    res = robot.speech2text("resource/demo_16k.wav")
+    # res = robot.speech2text("resource/demo_16k.wav")
+    # print(res)
+    res = robot.chat("今天天气真不错")
     print(res)
+    
     
