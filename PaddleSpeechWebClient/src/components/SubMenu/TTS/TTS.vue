@@ -334,7 +334,7 @@ function base64ToUint8Array(base64String) {
                     // console.log("chunk length: ", chunk.length)
                     // var arraybuffer = base64ToUint8Array(chunk)
                     var view = new DataView(value.buffer);
-                    console.log('tts chunk data', view)
+                    // console.log('tts chunk data', view)
                     
                     var length = view.buffer.byteLength / 2
                     
