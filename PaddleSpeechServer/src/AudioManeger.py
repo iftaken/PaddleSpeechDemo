@@ -109,9 +109,10 @@ class AudioMannger:
                         # 录音停止
                         print("录音停止")
                         # audios 保存为 wav, 送入 ASR
-                        file_path = os.path.join(self.file_dir, "asr_" + datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d%H%M%S') + randName() + ".wav")
-                        self.save_audio(file_path=file_path)
-                        self.asr_result = self.robot.speech2text(file_path)
+                        if len(self.audios) > 2 * 16000:
+                            file_path = os.path.join(self.file_dir, "asr_" + datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d%H%M%S') + randName() + ".wav")
+                            self.save_audio(file_path=file_path)
+                            self.asr_result = self.robot.speech2text(file_path)
                         self.clear_audio()
                         return self.asr_result   
                     else:

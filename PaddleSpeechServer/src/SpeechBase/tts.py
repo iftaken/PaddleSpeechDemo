@@ -28,6 +28,7 @@ class TTS:
         tts_config = get_config(config_path)['tts_online-onnx']
         self.config = get_config(config_path)['tts_online-onnx']
         self.config['voc_block'] = 36
+        # self.config['voc_pad'] = 21
         self.engine =  TTSEngine()
         self.engine.init(self.config)
         self.engine.warm_up()
@@ -56,32 +57,35 @@ class TTS:
          
     def offlineTTS(self, text):
         get_tone_ids = False
-        merge_sentences = True
+        merge_sentences = False
         
         input_ids = self.frontend.get_input_ids(
                 text,
                 merge_sentences=merge_sentences,
                 get_tone_ids=get_tone_ids)
         phone_ids = input_ids["phone_ids"]
-        
-        orig_hs = self.engine.executor.am_encoder_infer_sess.run(
-                        None, input_feed={'text': phone_ids[0].numpy()}
-                        )
-        hs = orig_hs[0]
-        am_decoder_output = self.engine.executor.am_decoder_sess.run(
-                    None, input_feed={'xs': hs})
-        am_postnet_output = self.engine.executor.am_postnet_sess.run(
-                    None,
-                    input_feed={
-                        'xs': np.transpose(am_decoder_output[0], (0, 2, 1))
-                    })
-        am_output_data = am_decoder_output + np.transpose(
-            am_postnet_output[0], (0, 2, 1))
-        normalized_mel = am_output_data[0][0]
-        mel = denorm(normalized_mel, self.engine.executor.am_mu, self.engine.executor.am_std)
-        wav = self.engine.executor.voc_sess.run(
-                        output_names=None, input_feed={'logmel': mel})[0]
-        return wav
+        wav_list = []
+        for i in range(len(phone_ids)):
+            orig_hs = self.engine.executor.am_encoder_infer_sess.run(
+                            None, input_feed={'text': phone_ids[i].numpy()}
+                            )
+            hs = orig_hs[0]
+            am_decoder_output = self.engine.executor.am_decoder_sess.run(
+                        None, input_feed={'xs': hs})
+            am_postnet_output = self.engine.executor.am_postnet_sess.run(
+                        None,
+                        input_feed={
+                            'xs': np.transpose(am_decoder_output[0], (0, 2, 1))
+                        })
+            am_output_data = am_decoder_output + np.transpose(
+                am_postnet_output[0], (0, 2, 1))
+            normalized_mel = am_output_data[0][0]
+            mel = denorm(normalized_mel, self.engine.executor.am_mu, self.engine.executor.am_std)
+            wav = self.engine.executor.voc_sess.run(
+                            output_names=None, input_feed={'logmel': mel})[0]
+            wav_list.append(wav)
+        wavs = np.concatenate(wav_list)
+        return wavs
     
     def streamTTS(self, text):
         for sub_wav_base64 in self.engine.run(sentence=text):

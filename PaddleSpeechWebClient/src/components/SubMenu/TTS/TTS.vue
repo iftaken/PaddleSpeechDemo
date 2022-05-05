@@ -208,13 +208,13 @@ function base64ToUint8Array(base64String) {
             this.ws = new WebSocket("ws://localhost:8010/ws/tts/online")
             this.ws.addEventListener('message', function (event) {
                 var temp = JSON.parse(event.data);
-                console.log("ws_tts_chunk:", temp.done)
+                // console.log("ws_tts_chunk:", temp.done)
                 // 接收的数据刷进播放器
                 if(!temp.done){
                     var chunk = temp.wav
                     var arraybuffer = base64ToUint8Array(chunk)
                     var view = new DataView(arraybuffer.buffer);
-                    console.log('tts chunk data', view)
+                    // console.log('tts chunk data', view)
                     
                     var length = view.buffer.byteLength / 2
                     
@@ -318,7 +318,6 @@ function base64ToUint8Array(base64String) {
 
             // 使用fetch流式获取数据
             const response = await fetch(request)
-            const decoder = new TextDecoder();
             const reader = response.body.getReader(),
                 contentLength = response.headers.get('content-length'), // requires CORS access-control-expose-headers: content-length
                 totalBytes = contentLength? parseInt(contentLength, 10) : 0;
@@ -327,8 +326,8 @@ function base64ToUint8Array(base64String) {
             const read = async () => {
                 const { value, done } = await reader.read()               
                 if (!done) {
-                    console.log("value length: ", value.length)
-                    console.log("value", value)
+                    // console.log("value length: ", value.length)
+                    // console.log("value", value)
                     // debugger
 
                     // var chunk = decoder.decode(value)
