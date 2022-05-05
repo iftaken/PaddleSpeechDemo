@@ -1,8 +1,8 @@
 <template>
     <div class="ttsbox">
         <!-- <el-button type="success" @click="getTts(ttsd)" style="margin:1vw;"> TTS </el-button> -->
-        <el-button type="success" @click="getTtsChunk(ttsText)" style="margin:1vw;"> 流式TTS Old</el-button>
-        <el-button type="success" @click="getTtsChunkNew(ttsText)" style="margin:1vw;"> 流式TTS New</el-button>
+        <!-- <el-button type="success" @click="getTtsChunk(ttsText)" style="margin:1vw;"> 流式TTS Old</el-button> -->
+        <!-- <el-button type="success" @click="getTtsChunkNew(ttsText)" style="margin:1vw;"> 流式TTS New</el-button> -->
         <el-button type="success" @click="getTtsChunkWav(ttsText)" style="margin:1vw;"> 流式TTS Wav</el-button>
 
         <el-button type="success" @click="getTts(ttsText)" style="margin:1vw;"> 端到端TTS </el-button>
@@ -103,9 +103,6 @@ function playAudioDataChunk(inputChunks, index){
     } 
 }
 
-
-
-
 // 定义新的流式播放服务
 var _audioSrcNodes = []
 const _audioCtx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
@@ -140,7 +137,7 @@ function _schedulePlayback({channelData, length, numberOfChannels, sampleRate}) 
 
     let startDelay = 0;
     if (!_playStartedAt) {
-      startDelay = 100 / 1000;
+      startDelay = 300 / 1000;
       _playStartedAt = _audioCtx.currentTime + startDelay;
     }
     console.log(audioBuffer)
@@ -321,7 +318,7 @@ function base64ToUint8Array(base64String) {
                 save_path: ''
             }
             
-            var request = new Request('/aaa/paddlespeech/streaming/tts', {
+            var request = new Request('/api/tts/online', {
                 method: 'POST',
                 headers: new Headers({
                     'Content-Type': 'application/json'
@@ -351,7 +348,7 @@ function base64ToUint8Array(base64String) {
                 save_path: ''
             }
             
-            var request = new Request('/aaa/paddlespeech/streaming/tts', {
+            var request = new Request('/api/tts/online', {
                 method: 'POST',
                 headers: new Headers({
                     'Content-Type': 'application/json'
@@ -414,7 +411,7 @@ function base64ToUint8Array(base64String) {
                 save_path: ''
             }
             
-            var request = new Request('/aaa/paddlespeech/streaming/tts', {
+            var request = new Request('/api/tts/online', {
                 method: 'POST',
                 headers: new Headers({
                     'Content-Type': 'application/json'

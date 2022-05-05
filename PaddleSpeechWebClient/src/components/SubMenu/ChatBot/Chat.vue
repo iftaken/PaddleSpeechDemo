@@ -68,16 +68,6 @@ const recorder = new Recorder({
             latencyHint: 'interactive',
             sampleRate: 24000,
           });
-        // this.audioCtx.onstatechange = function() {
-        //   // console.log("hhhh");
-        // };
-        // this.audioCtx.onplayend = function() {
-        //   // console.log("播放结束")
-        // }
-        // this.source = this.audioCtx.createBufferSource();
-        // this.source.onended = () => {
-        //       // console.log("播放结束hhhhhhh")
-        //     }
         // 定义 play
         recorder.onplayend = () => {
         this.onPlay = false
@@ -86,7 +76,7 @@ const recorder = new Recorder({
         this.$nextTick(()=>{})
       }
       // 初始化ws
-      this.ws = new WebSocket("ws://localhost:8010/ws/user1");
+      this.ws = new WebSocket("ws://localhost:8010/ws/asr/offlineStream");
 
       // 定义消息处理逻辑
       var _that = this

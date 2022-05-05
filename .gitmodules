@@ -1,0 +1,6 @@
+[submodule "PaddleSpeechServer/PaddleSpeech"]
+	path = PaddleSpeechServer/PaddleSpeech
+	url = https://gitee.com/huangyunting/PaddleSpeech.git
+[submodule "PaddleSpeechServer/PaddleNLP"]
+	path = PaddleSpeechServer/PaddleNLP
+	url = https://gitee.com/huangyunting/PaddleNLP.git
