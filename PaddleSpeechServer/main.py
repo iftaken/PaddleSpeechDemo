@@ -3,25 +3,38 @@
 # 2. 接收录音音频，返回识别结果
 # 3. 接收ASR识别结果，返回NLP对话结果
 # 4. 接收NLP对话结果，返回TTS音频
-from pydantic import BaseModel
-from typing import Optional, List 
-import uvicorn
+
+import base64
 import os
+import json
+import datetime
+
+import uvicorn
+import aiofiles
+from typing import Optional, List 
+from pydantic import BaseModel
 from fastapi import FastAPI, Header, File, UploadFile, Form, Cookie, WebSocket, WebSocketDisconnect
 from starlette.responses import FileResponse
-from robot import Robot
-from util import *
-import aiofiles
-import datetime
-from queue import Queue
-from WebsocketManeger import ConnectionManager
-from AudioManeger import AudioMannger
-import base64
+from fastapi.responses import StreamingResponse
+from starlette.websockets import WebSocketState as WebSocketState
+
+from src.AudioManeger import AudioMannger
+from src.util import *
+from src.robot import Robot
+from src.WebsocketManeger import ConnectionManager
+
+from paddlespeech.server.engine.asr.online.asr_engine import PaddleASRConnectionHanddler
+
+
+tts_config = "PaddleSpeech/demos/streaming_tts_server/conf/tts_online_application.yaml"
+asr_config = "PaddleSpeech/demos/streaming_asr_server/conf/ws_conformer_application.yaml"
+tts_am_model_dir = "/Users/huangyiming02/.paddlespeech/models/fastspeech2_cnndecoder_csmsc_onnx-zh/fastspeech2_cnndecoder_csmsc_streaming_onnx_1.0.0"
+tts_voc_dir = "/Users/huangyiming02/.paddlespeech/models/hifigan_csmsc_onnx-zh/hifigan_csmsc_onnx_0.2.0"
 
 
 app = FastAPI()
-chatbot = Robot()
-chatbot.init()
+chatbot = Robot(asr_config, tts_config, tts_am_model_dir, tts_voc_dir)
+# chatbot.init()
 manager = ConnectionManager()
 aumanager = AudioMannger(chatbot)
 aumanager.init()
@@ -89,11 +102,11 @@ async def collectEnv(files: List[UploadFile]):
 # 停止录音
 @app.get("/asr/stopRecord")
 async def stopRecord():
-    now_name = datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d%H%M%S') + randName() + ".pcm"
-    out_file_path = os.path.join(source_dir, now_name)
-    async with aiofiles.open(out_file_path, 'wb') as out_file:
-        await out_file.write(audios.audios)  # async write
-    print(f"接收的数据流大小: {len(audios.audios)}")
+    # now_name = datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d%H%M%S') + randName() + ".pcm"
+    # out_file_path = os.path.join(source_dir, now_name)
+    # async with aiofiles.open(out_file_path, 'wb') as out_file:
+        # await out_file.write(audios.audios)  # async write
+    # print(f"接收的数据流大小: {len(audios.audios)}")
     audios.audios = b""
     aumanager.stop()
     print("Online录音暂停")
@@ -107,19 +120,17 @@ async def resumeRecord():
     return SuccessRequest(message="Online录音恢复")
 
 
-# websocket 传递识别文本
-@app.websocket("/ws/{user}")
-async def websocket_endpoint(websocket: WebSocket, user: str):
+# 聊天用的ASR
+@app.websocket("/ws/asr/offlineStream")
+async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
-
     try:
         while True:
             asr_res = None
             # websocket 不接收，只推送
-            
             data = await websocket.receive_bytes()
             # 前端收到数据
-            print("前端get")
+            # print("前端get")
             # 用 websocket 流式接收音频数据
             if not aumanager.is_pause:
                 asr_res = aumanager.stream_asr(data)
@@ -131,8 +142,97 @@ async def websocket_endpoint(websocket: WebSocket, user: str):
 
     except WebSocketDisconnect:
         manager.disconnect(websocket)
-        await manager.broadcast(f"用户-{user}-离开")
-        print(f"用户-{user}-离开")
+        # await manager.broadcast(f"用户-{user}-离开")
+        # print(f"用户-{user}-离开")
+
+
+# Online识别的ASR
+@app.websocket('/ws/asr/onlineStream')
+async def websocket_endpoint(websocket: WebSocket):
+    """PaddleSpeech Online ASR Server api
+
+    Args:
+        websocket (WebSocket): the websocket instance
+    """
+
+    #1. the interface wait to accept the websocket protocal header
+    #   and only we receive the header, it establish the connection with specific thread
+    await websocket.accept()
+
+    #2. if we accept the websocket headers, we will get the online asr engine instance
+    engine = chatbot.asr.engine
+
+    #3. each websocket connection, we will create an PaddleASRConnectionHanddler to process such audio
+    #   and each connection has its own connection instance to process the request
+    #   and only if client send the start signal, we create the PaddleASRConnectionHanddler instance
+    connection_handler = None
+
+    try:
+        #4. we do a loop to process the audio package by package according the protocal
+        #   and only if the client send finished signal, we will break the loop
+        while True:
+            # careful here, changed the source code from starlette.websockets
+            # 4.1 we wait for the client signal for the specific action
+            assert websocket.application_state == WebSocketState.CONNECTED
+            message = await websocket.receive()
+            websocket._raise_on_disconnect(message)
+
+            #4.2 text for the action command and bytes for pcm data
+            if "text" in message:
+                # we first parse the specific command
+                message = json.loads(message["text"])
+                if 'signal' not in message:
+                    resp = {"status": "ok", "message": "no valid json data"}
+                    await websocket.send_json(resp)
+
+                # start command, we create the PaddleASRConnectionHanddler instance to process the audio data
+                # end command, we process the all the last audio pcm and return the final result
+                #              and we break the loop
+                if message['signal'] == 'start':
+                    resp = {"status": "ok", "signal": "server_ready"}
+                    # do something at begining here
+                    # create the instance to process the audio
+                    # connection_handler = chatbot.asr.connection_handler
+                    connection_handler = PaddleASRConnectionHanddler(engine)
+                    await websocket.send_json(resp)
+                elif message['signal'] == 'end':
+                    # reset single  engine for an new connection
+                    # and we will destroy the connection
+                    connection_handler.decode(is_finished=True)
+                    connection_handler.rescoring()
+                    asr_results = connection_handler.get_result()
+                    connection_handler.reset()
+
+                    resp = {
+                        "status": "ok",
+                        "signal": "finished",
+                        'result': asr_results
+                    }
+                    await websocket.send_json(resp)
+                    break
+                else:
+                    resp = {"status": "ok", "message": "no valid json data"}
+                    await websocket.send_json(resp)
+            elif "bytes" in message:
+                # bytes for the pcm data
+                message = message["bytes"]
+                print("###############")
+                print("len message: ", len(message))
+                print("###############")
+
+                # we extract the remained audio pcm 
+                # and decode for the result in this package data
+                connection_handler.extract_feat(message)
+                connection_handler.decode(is_finished=False)
+                asr_results = connection_handler.get_result()
+
+                # return the current period result
+                # if the engine create the vad instance, this connection will have many period results 
+                resp = {'result': asr_results}
+                print(resp)
+                await websocket.send_json(resp)
+    except WebSocketDisconnect:
+        pass
 
 
 @app.post("/nlp/chat")
@@ -144,6 +244,14 @@ async def chatOffline(nlp_base:NlpBase):
         res = chatbot.chat(chat)
         return SuccessRequest(result=res)
 
+@app.post("/nlp/ie")
+async def ieOffline(nlp_base:NlpBase):
+    nlp_text = nlp_base.chat
+    if not nlp_text:
+        return ErrorRequest(message="传入文本为空")
+    else:
+        res = chatbot.ie(nlp_text)
+        return SuccessRequest(result=res)
 
 @app.post("/tts/offline")
 async def text2speechOffline(tts_base:TtsBase):
@@ -151,14 +259,19 @@ async def text2speechOffline(tts_base:TtsBase):
     if not text:
         return ErrorRequest(message="文本为空")
     else:
-        now_name = datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d%H%M%S') + randName() + ".wav"
+        now_name = "tts_"+ datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d%H%M%S') + randName() + ".wav"
         out_file_path = os.path.join(source_dir, now_name)
+        # 保存为文件，再转成base64传输
         chatbot.text2speech(text, outpath=out_file_path)
         with open(out_file_path, "rb") as f:
             data_bin = f.read()
         base_str = base64.b64encode(data_bin)
         return SuccessRequest(result=base_str)
 
+@app.post("/tts/online")
+async def stream_tts(request_body: TtsBase):
+    text = request_body.text
+    return StreamingResponse(chatbot.text2speechStream(text=text))
 
 
 if __name__ == '__main__':

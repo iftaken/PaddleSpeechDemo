@@ -44,13 +44,14 @@ const recorder = new Recorder({
         },
         mounted (){
             // 初始化ws
-            this.ws = new WebSocket("ws://localhost/ws/asr");
+            this.ws = new WebSocket("ws://localhost:8010/ws/asr/onlineStream");
             // 定义消息处理逻辑
             var _that = this
             this.ws.addEventListener('message', function (event) {
                 var temp = JSON.parse(event.data);
-                if(temp.asr_results && (temp.asr_results != _that.streamAsrResult)){
-                    _that.streamAsrResult = temp.asr_results
+                // console.log('ws message', event.data)
+                if(temp.result && (temp.result != _that.streamAsrResult)){
+                    _that.streamAsrResult = temp.result
                     _that.$nextTick(()=>{})
                     console.log('更新了')
                 }                
@@ -98,7 +99,7 @@ const recorder = new Recorder({
                         }
                         // 上传到流式测试1
                         this.uploadChunk(newData)
-                        }, 300)
+                        }, 500)
                     }, (error) => {
                     console.log("录音出错");
                     })
