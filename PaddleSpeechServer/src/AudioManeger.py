@@ -5,7 +5,7 @@ import os
 import wave
 import random
 import datetime
-from util import randName
+from .util import randName
 
 
 class AudioMannger:

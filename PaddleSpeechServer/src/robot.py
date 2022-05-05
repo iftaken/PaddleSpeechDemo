@@ -8,9 +8,9 @@ import soundfile as sf
 import logging
 import soundfile
 
-from SpeechBase.asr import ASR
-from SpeechBase.tts import TTS
-from SpeechBase.nlp import NLP
+from src.SpeechBase.asr import ASR
+from src.SpeechBase.tts import TTS
+from src.SpeechBase.nlp import NLP
 
 
 class Robot:

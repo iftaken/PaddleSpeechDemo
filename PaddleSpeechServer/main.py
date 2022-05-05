@@ -28,12 +28,10 @@ from paddlespeech.server.engine.asr.online.asr_engine import PaddleASRConnection
 
 tts_config = "PaddleSpeech/demos/streaming_tts_server/conf/tts_online_application.yaml"
 asr_config = "PaddleSpeech/demos/streaming_asr_server/conf/ws_conformer_application.yaml"
-tts_am_model_dir = "/Users/huangyiming02/.paddlespeech/models/fastspeech2_cnndecoder_csmsc_onnx-zh/fastspeech2_cnndecoder_csmsc_streaming_onnx_1.0.0"
-tts_voc_dir = "/Users/huangyiming02/.paddlespeech/models/hifigan_csmsc_onnx-zh/hifigan_csmsc_onnx_0.2.0"
-
+asr_init_path = "source/demo/demo_16k.wav"
 
 app = FastAPI()
-chatbot = Robot(asr_config, tts_config, tts_am_model_dir, tts_voc_dir)
+chatbot = Robot(asr_config, tts_config, asr_init_path)
 # chatbot.init()
 manager = ConnectionManager()
 aumanager = AudioMannger(chatbot)
