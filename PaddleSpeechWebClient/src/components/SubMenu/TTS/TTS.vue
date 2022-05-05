@@ -1,9 +1,6 @@
 <template>
     <div class="ttsbox">
-        <!-- <el-button type="success" @click="getTts(ttsd)" style="margin:1vw;"> TTS </el-button> -->
-        <!-- <el-button type="success" @click="getTtsChunk(ttsText)" style="margin:1vw;"> 流式TTS Old</el-button> -->
-        <!-- <el-button type="success" @click="getTtsChunkNew(ttsText)" style="margin:1vw;"> 流式TTS New</el-button> -->
-        <el-button type="success" @click="getTtsChunkWav(ttsText)" style="margin:1vw;"> 流式TTS Wav</el-button>
+        <el-button type="success" @click="getTtsChunkWav(ttsText)" style="margin:1vw;"> 流式TTS fetch</el-button>
         <el-button type="success" @click="getTtsChunkWavWS(ttsText)" style="margin:1vw;"> 流式TTS WS</el-button>
 
         <el-button type="success" @click="getTts(ttsText)" style="margin:1vw;"> 端到端TTS </el-button>
@@ -57,11 +54,9 @@ function playAudioDataChunkRead(inputChunk){
                     }  
                 }
             source.buffer = buffer
-            // console.log('buffer', buffer)
             source.connect(audioCtx.destination);
             source.start();
         }, function(e) {
-            // Recorder.throwError(e);
         });
     } 
 }
@@ -94,11 +89,9 @@ function playAudioDataChunk(inputChunks, index){
                     }  
                 }
             source.buffer = buffer
-            // console.log('buffer', buffer)
             source.connect(audioCtx.destination);
             source.start();
         }, function(e) {
-            // Recorder.throwError(e);
         });
     } 
 }
@@ -120,11 +113,6 @@ function _reset(){
 function _schedulePlayback({channelData, length, numberOfChannels, sampleRate}) {
     const audioSrc = _audioCtx.createBufferSource(),
           audioBuffer = _audioCtx.createBuffer(numberOfChannels, length, sampleRate);
-    // var audioBuffer = ""
-    // _audioCtx.decodeAudioData(wavData).then(function(buffer){
-    //     console.log("buffer", buffer)
-    //     audioBuffer = buffer
-    // })
     
     audioSrc.onended = () => {
       _audioSrcNodes.shift();
@@ -153,7 +141,6 @@ function _schedulePlayback({channelData, length, numberOfChannels, sampleRate}) 
 
 function _schedulePlaybackWav({wavData, length, numberOfChannels, sampleRate}) {
     audioCtx.decodeAudioData(wavData, audioBuffer => {
-            // console.log(audioBuffer)
             const audioSrc = _audioCtx.createBufferSource()
             audioSrc.onended = () => {
                 _audioSrcNodes.shift();
@@ -167,9 +154,7 @@ function _schedulePlaybackWav({wavData, length, numberOfChannels, sampleRate}) {
             audioSrc.buffer = audioBuffer;
             audioSrc.connect(_audioCtx.destination);
             
-            // console.log("_playStartedAt", _playStartedAt)
             const startAt = _playStartedAt + _totalTimeScheduled;
-            // console.log("startAt", startAt)
             audioSrc.start(startAt);
 
             _totalTimeScheduled+= audioBuffer.duration;
@@ -177,29 +162,7 @@ function _schedulePlaybackWav({wavData, length, numberOfChannels, sampleRate}) {
         })
 
     
-        //   audioBuffer = _audioCtx.createBuffer(numberOfChannels, length, sampleRate);
-    // var audioBuffer = ""
-    // console.log(wavData)
-    // _audioCtx.decodeAudioData(wavData).then(function(decodedData){
-    //     console.log("buffer", decodedData)
-    //     audioBuffer = decodedData
-    // })
-    
-    // audioSrc.onended = () => {
-    //   _audioSrcNodes.shift();
-
-    // };
-    // _audioSrcNodes.push(audioSrc);
-
-    // Use performant copyToChannel() if browser supports it
-    // audioBuffer.copyToChannel(channelData, 0);
-
-    
   }
-
-
-
-
 
 // base64转换
 function base64ToUint8Array(base64String) {
@@ -233,9 +196,7 @@ function base64ToUint8Array(base64String) {
                 latencyHint: 'interactive',
                 sampleRate: 24000,
             });
-            this.audioCtx.onstatechange = function() {
-            console.log("hhhh");
-            };
+            
             this.audioCtx.onplayend = function() {
             console.log("播放结束")
             }
@@ -266,7 +227,6 @@ function base64ToUint8Array(base64String) {
                     })
                 } else {
                     reciveOver = true
-                    // _reset()
                 } 
 
             })
@@ -355,8 +315,6 @@ function base64ToUint8Array(base64String) {
                 }),
                 body: JSON.stringify(ttsPara)
             });
-            // 使用 XMLHttpRequest
-            // const xhr = new XMLHttpRequest();
 
             // 使用fetch流式获取数据
             const response = await fetch(request)
@@ -370,11 +328,13 @@ function base64ToUint8Array(base64String) {
                 const { value, done } = await reader.read()               
                 if (!done) {
                     console.log("value length: ", value.length)
+                    console.log("value", value)
+                    // debugger
 
-                    var chunk = decoder.decode(value)
-                    console.log("chunk length: ", chunk.length)
-                    var arraybuffer = base64ToUint8Array(chunk)
-                    var view = new DataView(arraybuffer.buffer);
+                    // var chunk = decoder.decode(value)
+                    // console.log("chunk length: ", chunk.length)
+                    // var arraybuffer = base64ToUint8Array(chunk)
+                    var view = new DataView(value.buffer);
                     console.log('tts chunk data', view)
                     
                     var length = view.buffer.byteLength / 2
@@ -389,7 +349,7 @@ function base64ToUint8Array(base64String) {
                     return read();
                 } else {
                     reciveOver = true
-                    _reset()
+                    // _reset()
                 }
             }
             read()

@@ -270,7 +270,7 @@ async def text2speechOffline(tts_base:TtsBase):
 @app.post("/tts/online")
 async def stream_tts(request_body: TtsBase):
     text = request_body.text
-    return StreamingResponse(chatbot.text2speechStream(text=text))
+    return StreamingResponse(chatbot.text2speechStreamBytes(text=text))
 
 # ws流式TTS
 @app.websocket("/ws/tts/online")

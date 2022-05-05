@@ -43,13 +43,12 @@ class Robot:
         return res
     
     def text2speechStream(self, text):
-        idx = 1
         for sub_wav_base64 in self.tts.streamTTS(text=text):
-            if idx == 1:
-                print(sub_wav_base64)
-            idx += 1
-            print("sub_wav_base64: ", len(sub_wav_base64))
             yield sub_wav_base64
+    
+    def text2speechStreamBytes(self, text):
+        for wav_bytes in self.tts.streamTTSBytes(text=text):
+            yield wav_bytes
 
     def chat(self, text):
         result = self.nlp.chat(text)

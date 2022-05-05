@@ -86,6 +86,16 @@ class TTS:
     def streamTTS(self, text):
         for sub_wav_base64 in self.engine.run(sentence=text):
             yield sub_wav_base64
+    
+    def streamTTSBytes(self, text):
+        for wav in self.engine.executor.infer(
+                text=text,
+                lang=self.engine.config.lang,
+                am=self.engine.config.am,
+                spk_id=0):
+            wav = float2pcm(wav)  # float32 to int16
+            wav_bytes = wav.tobytes()  # to bytes
+            yield wav_bytes
         
     
     def after_process(self, wav):
