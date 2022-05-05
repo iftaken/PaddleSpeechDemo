@@ -266,11 +266,39 @@ async def text2speechOffline(tts_base:TtsBase):
         base_str = base64.b64encode(data_bin)
         return SuccessRequest(result=base_str)
 
+# http流式TTS
 @app.post("/tts/online")
 async def stream_tts(request_body: TtsBase):
     text = request_body.text
     return StreamingResponse(chatbot.text2speechStream(text=text))
 
+# ws流式TTS
+@app.websocket("/ws/tts/online")
+async def stream_ttsWS(websocket: WebSocket):
+    await manager.connect(websocket)
+    try:
+        while True:
+            text = await websocket.receive_text()
+            # 用 websocket 流式接收音频数据
+            if text:
+                for sub_wav in chatbot.text2speechStream(text=text):
+                    print("发送sub wav: ", len(sub_wav))
+                    res = {
+                        "wav": sub_wav,
+                        "done": False
+                    }
+                    await websocket.send_json(res)
+                
+                # 输送结束
+                res = {
+                        "wav": sub_wav,
+                        "done": True
+                    }
+                await websocket.send_json(res)
+            # manager.disconnect(websocket)
+
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
 
 if __name__ == '__main__':
     uvicorn.run(app=app, host='0.0.0.0', port=8010)

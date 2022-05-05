@@ -4,6 +4,7 @@
         <!-- <el-button type="success" @click="getTtsChunk(ttsText)" style="margin:1vw;"> 流式TTS Old</el-button> -->
         <!-- <el-button type="success" @click="getTtsChunkNew(ttsText)" style="margin:1vw;"> 流式TTS New</el-button> -->
         <el-button type="success" @click="getTtsChunkWav(ttsText)" style="margin:1vw;"> 流式TTS Wav</el-button>
+        <el-button type="success" @click="getTtsChunkWavWS(ttsText)" style="margin:1vw;"> 流式TTS WS</el-button>
 
         <el-button type="success" @click="getTts(ttsText)" style="margin:1vw;"> 端到端TTS </el-button>
         
@@ -55,7 +56,6 @@ function playAudioDataChunkRead(inputChunk){
                     }
                     }  
                 }
-            
             source.buffer = buffer
             // console.log('buffer', buffer)
             source.connect(audioCtx.destination);
@@ -83,6 +83,7 @@ function playAudioDataChunk(inputChunks, index){
                 } else {
                     if(reciveOver) {
                         console.log("流式播放完毕")
+                        _reset()
                     } else {
                         console.log("等待数据")
                         if(index >= inputChunks.length - 1){
@@ -92,7 +93,6 @@ function playAudioDataChunk(inputChunks, index){
                     }
                     }  
                 }
-            
             source.buffer = buffer
             // console.log('buffer', buffer)
             source.connect(audioCtx.destination);
@@ -140,7 +140,7 @@ function _schedulePlayback({channelData, length, numberOfChannels, sampleRate}) 
       startDelay = 300 / 1000;
       _playStartedAt = _audioCtx.currentTime + startDelay;
     }
-    console.log(audioBuffer)
+    // console.log(audioBuffer)
     audioSrc.buffer = audioBuffer;
     audioSrc.connect(_audioCtx.destination);
     
@@ -167,9 +167,9 @@ function _schedulePlaybackWav({wavData, length, numberOfChannels, sampleRate}) {
             audioSrc.buffer = audioBuffer;
             audioSrc.connect(_audioCtx.destination);
             
-            console.log("_playStartedAt", _playStartedAt)
+            // console.log("_playStartedAt", _playStartedAt)
             const startAt = _playStartedAt + _totalTimeScheduled;
-            console.log("startAt", startAt)
+            // console.log("startAt", startAt)
             audioSrc.start(startAt);
 
             _totalTimeScheduled+= audioBuffer.duration;
@@ -225,6 +225,7 @@ function base64ToUint8Array(base64String) {
                 source: '',
                 typedArray: '',
                 ttsResult: '',
+                ws: ''
             }
         },
         mounted () {
@@ -242,6 +243,34 @@ function base64ToUint8Array(base64String) {
             this.source.onended = () => {
                 console.log("播放结束hhhhhhh")
                 }
+            
+            this.ws = new WebSocket("ws://localhost:8010/ws/tts/online")
+            this.ws.addEventListener('message', function (event) {
+                var temp = JSON.parse(event.data);
+                console.log("ws_tts_chunk:", temp.done)
+                // 接收的数据刷进播放器
+                if(!temp.done){
+                    var chunk = temp.wav
+                    var arraybuffer = base64ToUint8Array(chunk)
+                    var view = new DataView(arraybuffer.buffer);
+                    console.log('tts chunk data', view)
+                    
+                    var length = view.buffer.byteLength / 2
+                    
+                    view = Recorder.encodeWAV(view, 24000, 24000, 1, 16, true) 
+                    _schedulePlaybackWav({
+                        wavData: view.buffer,
+                        length: length,
+                        numberOfChannels: 1,
+                        sampleRate: 24000
+                    })
+                } else {
+                    reciveOver = true
+                    // _reset()
+                } 
+
+            })
+
             },
         methods: {
           base64ToUint8Array(base64String) {
@@ -302,106 +331,14 @@ function base64ToUint8Array(base64String) {
             console.error(err)
         },
 
-        async getTtsChunk(nlpText){
-            // base64
-            // 初始化 chunks
-            chunks = []
-            chunk_index = 0
-            // 初始化播放
-            reciveOver = false
-            let ttsPara = {
-                text: nlpText,
-                spk_id: 0,
-                speed: 1.0,
-                volume: 1.0,
-                sample_rate: 0,
-                save_path: ''
-            }
-            
-            var request = new Request('/api/tts/online', {
-                method: 'POST',
-                headers: new Headers({
-                    'Content-Type': 'application/json'
-                }),
-                body: JSON.stringify(ttsPara)
-            });
-
-            fetch(request)
-            .then(this.processChunkedResponse)
-            .then(this.onChunkedResponseComplete)
-            .catch(this.onChunkedResponseError);
-        },
-
-        async getTtsChunkNew(nlpText){
-            // base64
-            // 初始化 chunks
-            chunks = []
-            chunk_index = 0
-            // 初始化播放
-            reciveOver = false
-            let ttsPara = {
-                text: nlpText,
-                spk_id: 0,
-                speed: 1.0,
-                volume: 1.0,
-                sample_rate: 0,
-                save_path: ''
-            }
-            
-            var request = new Request('/api/tts/online', {
-                method: 'POST',
-                headers: new Headers({
-                    'Content-Type': 'application/json'
-                }),
-                body: JSON.stringify(ttsPara)
-            });
-
-            const response = await fetch(request)
-            const decoder = new TextDecoder();
-            const reader = response.body.getReader(),
-                contentLength = response.headers.get('content-length'), // requires CORS access-control-expose-headers: content-length
-                totalBytes = contentLength? parseInt(contentLength, 10) : 0;
-            // 异步获取数据
-            const read = async () => {
-                const { value, done } = await reader.read()
-
-                var chunk = decoder.decode(value)
-                var arraybuffer = base64ToUint8Array(chunk)
-                var view = new DataView(arraybuffer.buffer);
-                var length = view.buffer.byteLength / 2
-                // view 转成 float32数组
-                var channel = new Float32Array(length)
-                let i = 0
-                while( i < length){
-                    var int = view.getInt16(i*2, true);
-                    var float = (int >= 0x8000) ? -(0x10000 - int) / 0x8000 : int / 0x7FFF;
-                    channel[i] =  float
-                    i += 2
-                    // console.log(channel[i])
-                }
-                // view = Recorder.encodeWAV(view, 24000, 24000, 1, 16, true)                
-                if (!done) {
-                    _schedulePlayback({
-                        channelData: channel,
-                        length: length,
-                        numberOfChannels: 1,
-                        sampleRate: 24000
-                    })
-                    return read();
-                } else {
-                    _reset()
-                }
-            }
-            read()
-        },
-
         async getTtsChunkWav(nlpText){
             // base64
             // 初始化 chunks
             chunks = []
             chunk_index = 0
-            // 初始化播放
             reciveOver = false
+            _reset()
+            // 初始化播放
             let ttsPara = {
                 text: nlpText,
                 spk_id: 0,
@@ -418,32 +355,31 @@ function base64ToUint8Array(base64String) {
                 }),
                 body: JSON.stringify(ttsPara)
             });
+            // 使用 XMLHttpRequest
+            // const xhr = new XMLHttpRequest();
 
+            // 使用fetch流式获取数据
             const response = await fetch(request)
             const decoder = new TextDecoder();
             const reader = response.body.getReader(),
                 contentLength = response.headers.get('content-length'), // requires CORS access-control-expose-headers: content-length
                 totalBytes = contentLength? parseInt(contentLength, 10) : 0;
+
             // 异步获取数据
             const read = async () => {
-                const { value, done } = await reader.read()
-
-                var chunk = decoder.decode(value)
-                var arraybuffer = base64ToUint8Array(chunk)
-                var view = new DataView(arraybuffer.buffer);
-                var length = view.buffer.byteLength / 2
-                // view 转成 float32数组
-                // var channel = new Float32Array(length)
-                // let i = 0
-                // while( i < length){
-                //     var int = view.getInt16(i*2, true);
-                //     var float = (int >= 0x8000) ? -(0x10000 - int) / 0x8000 : int / 0x7FFF;
-                //     channel[i] =  float
-                //     i += 2
-                //     // console.log(channel[i])
-                // }
-                view = Recorder.encodeWAV(view, 24000, 24000, 1, 16, true)                
+                const { value, done } = await reader.read()               
                 if (!done) {
+                    console.log("value length: ", value.length)
+
+                    var chunk = decoder.decode(value)
+                    console.log("chunk length: ", chunk.length)
+                    var arraybuffer = base64ToUint8Array(chunk)
+                    var view = new DataView(arraybuffer.buffer);
+                    console.log('tts chunk data', view)
+                    
+                    var length = view.buffer.byteLength / 2
+                    
+                    view = Recorder.encodeWAV(view, 24000, 24000, 1, 16, true) 
                     _schedulePlaybackWav({
                         wavData: view.buffer,
                         length: length,
@@ -452,30 +388,25 @@ function base64ToUint8Array(base64String) {
                     })
                     return read();
                 } else {
+                    reciveOver = true
                     _reset()
                 }
             }
             read()
         },
 
+        async getTtsChunkWavWS(nlpText){
+            // 初始化 chunks
+            chunks = []
+            chunk_index = 0
+            reciveOver = false
+            _reset()
+            this.ws.send(nlpText)
+        },
+
 
         // 合成TTS音频
         async getTts(nlpText){
-            // base64
-            // let ttsPara = {
-            //     text: nlpText,
-            //     spk_id: 0,
-            //     speed: 1.0,
-            //     volume: 1.0,
-            //     sample_rate: 0,
-            //     save_path: ''
-            // }
-            // this.ttsResult = await this.$http.post("/aaa/paddlespeech/streaming/tts", ttsPara)
-            
-            // this.typedArray = this.base64ToUint8Array(this.ttsResult.data)
-            // let view = new DataView(this.typedArray.buffer);
-            // view = Recorder.encodeWAV(view, 24000, 24000, 1, 16, true)
-            // console.log("tts", view.buffer)
             this.ttsResult = await this.$http.post("/api/tts/offline", { text : nlpText});
             this.typedArray = this.base64ToUint8Array(this.ttsResult.data.result)
             this.playAudioData( this.typedArray.buffer )

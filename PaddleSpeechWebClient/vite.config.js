@@ -23,11 +23,6 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ""),
       },
-      "/a_ws": {
-        target: "ws://localhost:8010",
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api_ws/, ""),
-      },
       "/VPR": {
         target: "http://localhost:8002",
         changeOrigin: true,

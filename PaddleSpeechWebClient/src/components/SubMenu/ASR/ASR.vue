@@ -44,7 +44,7 @@ const recorder = new Recorder({
         },
         mounted (){
             // 初始化ws
-            this.ws = new WebSocket("ws://localhost:8010/ws/asr/onlineStream");
+            this.ws = new WebSocket("ws://localhost:8010/ws/asr/onlineStream")
             // 定义消息处理逻辑
             var _that = this
             this.ws.addEventListener('message', function (event) {
