@@ -36,23 +36,10 @@ pip install .
 cd PaddleSpeechServer/PaddleNLP
 pip install .
 
-# 启动 asr, tts, chat, ie 服务
+# 启动 asr, tts, chat, ie, vpr 服务
 cd PaddleSpeechServer
 python main.py
 
-# 现在本地环境中安装 paddlepaddle 2.2.2
-# 本地音频服务 （端到端的就先走自己的服务）
-python main.py
-
 # 声纹识别服务
-# 参照 https://github.com/PaddlePaddle/PaddleSpeech/tree/develop/demos/audio_searching
-# 构建好 docker开启服务后
-cd PaddleSpeech/demos/audio_searching/
-# 构建镜像
-docker-compose -f docker-compose.yaml up -d
-# 开启声纹识别服务
-python src/vpr_search.py
 ```
-
-## todo
 

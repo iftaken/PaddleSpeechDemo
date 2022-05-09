@@ -115,7 +115,8 @@ async def collectEnv(files: List[UploadFile]):
         content = await file.read()  # async read
         # 初始化, wav 前44字节是头部信息
         aumanager.compute_env_volume(content[44:])
-        return SuccessRequest(message="采集环境噪音成功")
+        vad_ = aumanager.vad_threshold
+        return SuccessRequest(result=vad_,message="采集环境噪音成功")
 
 # 停止录音
 @app.get("/asr/stopRecord")
@@ -376,7 +377,7 @@ async def vpr_recog(request: Request,
 
 
 @app.post('/vpr/del')
-async def vpr_del(table_name: str=None, spk_id: dict=None):
+async def vpr_del(spk_id: dict=None):
     # Delete a record by spk_id in MySQL
     try:
         spk_id = spk_id['spk_id']
@@ -389,7 +390,7 @@ async def vpr_del(table_name: str=None, spk_id: dict=None):
 
 
 @app.get('/vpr/list')
-async def vpr_list(table_name: str=None):
+async def vpr_list():
     # Get all records in MySQL
     try:
         spk_ids, vpr_ids = vpr.do_list()
