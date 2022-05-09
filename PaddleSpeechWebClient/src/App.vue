@@ -5,6 +5,7 @@ import Chat from './components/SubMenu/ChatBot/Chat.vue'
 import ASR from './components/SubMenu/ASR/ASR.vue'
 import TTS from './components/SubMenu/TTS/TTS.vue'
 import VPR from './components/SubMenu/Speaker/VPR.vue'
+import IE from './components/SubMenu/IE/IE.vue'
 </script>
 
 <template>
@@ -12,6 +13,7 @@ import VPR from './components/SubMenu/Speaker/VPR.vue'
   <ASR></ASR>
   <TTS></TTS>
   <VPR></VPR>
+  <IE></IE>
 </template>
 
 <style>
