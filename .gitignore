@@ -5,3 +5,5 @@
 *.pyc
 *.pcm
 *.npy
+*.diff
+*.sqlite

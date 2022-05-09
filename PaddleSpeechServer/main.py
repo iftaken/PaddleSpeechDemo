@@ -14,30 +14,48 @@ import aiofiles
 from typing import Optional, List 
 from pydantic import BaseModel
 from fastapi import FastAPI, Header, File, UploadFile, Form, Cookie, WebSocket, WebSocketDisconnect
-from starlette.responses import FileResponse
 from fastapi.responses import StreamingResponse
+from starlette.responses import FileResponse
+from starlette.middleware.cors import CORSMiddleware
+from starlette.requests import Request
 from starlette.websockets import WebSocketState as WebSocketState
 
 from src.AudioManeger import AudioMannger
 from src.util import *
 from src.robot import Robot
 from src.WebsocketManeger import ConnectionManager
+from src.SpeechBase.vpr import VPR
 
 from paddlespeech.server.engine.asr.online.asr_engine import PaddleASRConnectionHanddler
 
-
+# 配置文件
 tts_config = "PaddleSpeech/demos/streaming_tts_server/conf/tts_online_application.yaml"
 asr_config = "PaddleSpeech/demos/streaming_asr_server/conf/ws_conformer_application.yaml"
 asr_init_path = "source/demo/demo_16k.wav"
+db_path = "source/db/vpr.sqlite"
 
+# 路径配置
+UPLOAD_PATH = "source/vpr"
+WAV_PATH = "source/wav"
+
+base_sources = [
+    UPLOAD_PATH, WAV_PATH
+]
+for path in base_sources:
+    os.makedirs(path, exist_ok=True)
+
+
+# 初始化
 app = FastAPI()
 chatbot = Robot(asr_config, tts_config, asr_init_path)
-# chatbot.init()
 manager = ConnectionManager()
 aumanager = AudioMannger(chatbot)
 aumanager.init()
+vpr = VPR(db_path, dim = 192, top_k = 5)
+# vpr.db.drop_table()
+# vpr.db.init_database()
 
-
+# 服务配置
 class NlpBase(BaseModel):
     chat: str
 
@@ -50,11 +68,13 @@ class Audios:
 
 audios = Audios()
 
-vad_bd = -1
-source_dir = "source"
-if not os.path.exists(source_dir):
-    os.makedirs(source_dir, exist_ok=True)
 
+
+
+
+######################################################################
+########################### ASR 服务 #################################
+#####################################################################
 
 # 接收文件，返回ASR结果
 # 上传文件
@@ -64,8 +84,8 @@ async def speech2textOffline(files: List[UploadFile]):
     asr_res = ""
     for file in files[:1]:
         # 生成时间戳
-        now_name = datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d%H%M%S') + randName() + ".wav"
-        out_file_path = os.path.join(source_dir, now_name)
+        now_name = "asr_offline_" + datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d%H%M%S') + randName() + ".wav"
+        out_file_path = os.path.join(WAV_PATH, now_name)
         async with aiofiles.open(out_file_path, 'wb') as out_file:
             content = await file.read()  # async read
             await out_file.write(content)  # async write
@@ -100,11 +120,6 @@ async def collectEnv(files: List[UploadFile]):
 # 停止录音
 @app.get("/asr/stopRecord")
 async def stopRecord():
-    # now_name = datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d%H%M%S') + randName() + ".pcm"
-    # out_file_path = os.path.join(source_dir, now_name)
-    # async with aiofiles.open(out_file_path, 'wb') as out_file:
-        # await out_file.write(audios.audios)  # async write
-    # print(f"接收的数据流大小: {len(audios.audios)}")
     audios.audios = b""
     aumanager.stop()
     print("Online录音暂停")
@@ -127,9 +142,6 @@ async def websocket_endpoint(websocket: WebSocket):
             asr_res = None
             # websocket 不接收，只推送
             data = await websocket.receive_bytes()
-            # 前端收到数据
-            # print("前端get")
-            # 用 websocket 流式接收音频数据
             if not aumanager.is_pause:
                 asr_res = aumanager.stream_asr(data)
             else:
@@ -232,6 +244,9 @@ async def websocket_endpoint(websocket: WebSocket):
     except WebSocketDisconnect:
         pass
 
+######################################################################
+########################### NLP 服务 #################################
+#####################################################################
 
 @app.post("/nlp/chat")
 async def chatOffline(nlp_base:NlpBase):
@@ -251,6 +266,10 @@ async def ieOffline(nlp_base:NlpBase):
         res = chatbot.ie(nlp_text)
         return SuccessRequest(result=res)
 
+######################################################################
+########################### TTS 服务 #################################
+#####################################################################
+
 @app.post("/tts/offline")
 async def text2speechOffline(tts_base:TtsBase):
     text = tts_base.text
@@ -258,7 +277,7 @@ async def text2speechOffline(tts_base:TtsBase):
         return ErrorRequest(message="文本为空")
     else:
         now_name = "tts_"+ datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d%H%M%S') + randName() + ".wav"
-        out_file_path = os.path.join(source_dir, now_name)
+        out_file_path = os.path.join(WAV_PATH, now_name)
         # 保存为文件，再转成base64传输
         chatbot.text2speech(text, outpath=out_file_path)
         with open(out_file_path, "rb") as f:
@@ -299,6 +318,107 @@ async def stream_ttsWS(websocket: WebSocket):
 
     except WebSocketDisconnect:
         manager.disconnect(websocket)
+
+
+######################################################################
+########################### VPR 服务 #################################
+#####################################################################
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"])
+
+
+@app.post('/vpr/enroll')
+async def vpr_enroll(table_name: str=None,
+                     spk_id: str=Form(...),
+                     audio: UploadFile=File(...)):
+    # Enroll the uploaded audio with spk-id into MySQL
+    try:
+        if not spk_id:
+            return {'status': False, 'msg': "spk_id can not be None"}
+        # Save the upload data to server.
+        content = await audio.read()
+        now_name = "vpr_enroll_" + datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d%H%M%S') + randName() + ".wav"
+        audio_path =  os.path.join(UPLOAD_PATH, now_name)
+
+        with open(audio_path, "wb+") as f:
+            f.write(content)
+        vpr.vpr_enroll(username=spk_id, wav_path=audio_path)
+        return {'status': True, 'msg': "Successfully enroll data!"}
+    except Exception as e:
+        return {'status': False, 'msg': e}
+
+
+@app.post('/vpr/recog')
+async def vpr_recog(request: Request,
+                    table_name: str=None,
+                    audio: UploadFile=File(...)):
+    # Voice print recognition online
+    # try:
+        # Save the upload data to server.
+    content = await audio.read()
+    now_name = "vpr_query_" + datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d%H%M%S') + randName() + ".wav"
+    query_audio_path =  os.path.join(UPLOAD_PATH, now_name)
+    with open(query_audio_path, "wb+") as f:
+        f.write(content)        
+    spk_ids, paths, scores = vpr.do_search_vpr(query_audio_path)
+
+    res = dict(zip(spk_ids, zip(paths, scores)))
+    # Sort results by distance metric, closest distances first
+    res = sorted(res.items(), key=lambda item: item[1][1], reverse=True)
+    return res
+    # except Exception as e:
+        # return {'status': False, 'msg': e}, 400
+
+
+@app.post('/vpr/del')
+async def vpr_del(table_name: str=None, spk_id: dict=None):
+    # Delete a record by spk_id in MySQL
+    try:
+        spk_id = spk_id['spk_id']
+        if not spk_id:
+            return {'status': False, 'msg': "spk_id can not be None"}
+        vpr.vpr_del(username=spk_id)
+        return {'status': True, 'msg': "Successfully delete data!"}
+    except Exception as e:
+        return {'status': False, 'msg': e}, 400
+
+
+@app.get('/vpr/list')
+async def vpr_list(table_name: str=None):
+    # Get all records in MySQL
+    try:
+        spk_ids, vpr_ids = vpr.do_list()
+        return spk_ids, vpr_ids
+    except Exception as e:
+        return {'status': False, 'msg': e}, 400
+
+
+@app.get('/vpr/data')
+async def vpr_data(vprId: int):
+    # Get the audio file from path by spk_id in MySQL
+    try:
+        if not vprId:
+            return {'status': False, 'msg': "vpr_id can not be None"}
+        audio_path = vpr.do_get_wav(vprId)
+        print(audio_path)
+        return FileResponse(audio_path)
+    except Exception as e:
+        return {'status': False, 'msg': e}, 400
+
+
+
+
+
+
+
+
+
+
 
 if __name__ == '__main__':
     uvicorn.run(app=app, host='0.0.0.0', port=8010)

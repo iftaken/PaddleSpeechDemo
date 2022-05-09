@@ -23,7 +23,12 @@
         <h2>声纹数据列表</h2>
         <el-table :data="vpr_datas" style="width: 40%">
             <el-table-column prop="spkId" label="spk_id" />
-            <el-table-column prop="wav" label="wav">
+            <el-table-column label="wav">
+                <template #default="scope2">
+                    <audio :src="'/VPR/vpr/data/?vprId='+scope2.row.vprId" controls>
+                    
+                    </audio>
+                </template>
             </el-table-column>
             <el-table-column fixed="right" label="Operations">
                 <template #default="scope">
@@ -150,7 +155,7 @@ const recorder = new Recorder({
                 for(let i=0; i<result.data[0].length; i++){
                     this.vpr_datas.push({
                         spkId: result.data[0][i],
-                        wav: result.data[1][i]
+                        vprId: result.data[1][i]
                     })
                 }
                 this.$nextTick(()=>{})
