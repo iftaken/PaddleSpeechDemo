@@ -33,6 +33,7 @@ tts_config = "PaddleSpeech/demos/streaming_tts_server/conf/tts_online_applicatio
 asr_config = "PaddleSpeech/demos/streaming_asr_server/conf/ws_conformer_application.yaml"
 asr_init_path = "source/demo/demo_16k.wav"
 db_path = "source/db/vpr.sqlite"
+ie_model_path = "source/model"
 
 # 路径配置
 UPLOAD_PATH = "source/vpr"
@@ -47,7 +48,7 @@ for path in base_sources:
 
 # 初始化
 app = FastAPI()
-chatbot = Robot(asr_config, tts_config, asr_init_path)
+chatbot = Robot(asr_config, tts_config, asr_init_path, ie_model_path=ie_model_path)
 manager = ConnectionManager()
 aumanager = AudioMannger(chatbot)
 aumanager.init()

@@ -7,3 +7,7 @@
 *.npy
 *.diff
 *.sqlite
+*/static/*
+*.pdparams
+*.pdiparams*
+*.pdmodel
