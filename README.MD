@@ -36,6 +36,11 @@ pip install .
 cd PaddleSpeechServer/PaddleNLP
 pip install .
 
+# 下载 ie 模型
+cd PaddleSpeechServer/source
+mkdir model & cd model
+wget https://bj.bcebos.com/paddlenlp/applications/speech-cmd-analysis/finetune/model_state.pdparams
+
 # 启动 asr, tts, chat, ie, vpr 服务
 cd PaddleSpeechServer
 python main.py
