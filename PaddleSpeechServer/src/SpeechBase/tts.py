@@ -7,11 +7,7 @@
 # 4. 流式推理
 
 import base64
-import imp
-import math
-import os
-import time
-from multiprocessing import cpu_count
+
 import numpy as np
 from paddlespeech.server.utils.onnx_infer import get_sess
 from paddlespeech.t2s.frontend.zh_frontend import Frontend
@@ -123,5 +119,6 @@ if __name__ == '__main__':
     
     end_wav = tts.offlineTTS(text)
     print(end_wav)
+    
     
         

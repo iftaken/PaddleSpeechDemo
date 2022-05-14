@@ -11,3 +11,4 @@
 *.pdparams
 *.pdiparams*
 *.pdmodel
+PaddleSpeechServer/test.py
