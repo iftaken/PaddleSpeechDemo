@@ -51,7 +51,7 @@ port = args.port
 
 # 配置文件
 tts_config = "PaddleSpeech/demos/streaming_tts_server/conf/tts_online_application.yaml"
-asr_config = "PaddleSpeech/demos/streaming_asr_server/conf/ws_conformer_wenetspeech_application.yaml"
+asr_config = "PaddleSpeech/demos/streaming_asr_server/conf/ws_conformer_wenetspeech_application_faster.yaml"
 asr_init_path = "source/demo/demo_16k.wav"
 db_path = "source/db/vpr.sqlite"
 ie_model_path = "source/model"

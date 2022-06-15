@@ -20,12 +20,13 @@ PaddleSpeechDemo是一个以PaddleSpeech的语音交互功能为主体开发的D
 
 ### 拉取项目
 
+需要python >= 3.7
 ```
 # 拉取项目
 git clone https://github.com/iftaken/PaddleSpeechDemo.git
 
 # 进入项目
-cd PaddleSpeechDemo
+cd PaddleSpeechDemo/PaddleSpeechServer
 
 # 拉取PaddleSpeech项目
 git clone https://github.com/PaddlePaddle/PaddleSpeech.git
