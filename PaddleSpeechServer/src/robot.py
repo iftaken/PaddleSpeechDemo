@@ -15,8 +15,8 @@ from src.SpeechBase.nlp import NLP
 
 class Robot:
     def __init__(self, asr_config, tts_config,
-                 asr_init_path) -> None:
-        self.nlp = NLP()
+                 asr_init_path, ie_model_path=None) -> None:
+        self.nlp = NLP(ie_model_path=ie_model_path)
         self.asr = ASR(config_path=asr_config)
         self.tts = TTS(config_path=tts_config)
         self.tts_sample_rate = 24000
@@ -62,9 +62,11 @@ if __name__ == '__main__':
     tts_config = "../PaddleSpeech/demos/streaming_tts_server/conf/tts_online_application.yaml"
     asr_config = "../PaddleSpeech/demos/streaming_asr_server/conf/ws_conformer_application.yaml"
     demo_wav = "../source/demo/demo_16k.wav"
+    ie_model_path = "../source/model"
     tts_wav = "../source/demo/tts.wav"
     text = "今天天气真不错"
     ie_text = "今天晚上我从大牛坊出发去三里屯花了六十五块钱"
+    
     
     robot = Robot(asr_config, tts_config, asr_init_path=demo_wav)
     res = robot.speech2text(demo_wav)

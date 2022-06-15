@@ -81,9 +81,7 @@ const recorder = new Recorder({
       // 定义消息处理逻辑
       var _that = this
       this.ws.addEventListener('message', function (event) {
-          // console.log(event.data)
           _that.allResultList.push("asr:" + event.data)
-          // console.log(this.asrResultList)
           _that.$nextTick(()=>{})
           _that.getNlp(event.data)
       })

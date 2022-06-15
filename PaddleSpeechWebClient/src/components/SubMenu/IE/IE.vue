@@ -91,10 +91,21 @@ const recorder = new Recorder({
                 const result = await this.$http.post('/api/nlp/ie', postdata)
                 console.log("ie", result)
 
-                this.time = result.data.result[0]['时间'][0]['text']
-                this.outset = result.data.result[0]['出发地'][0]['text']
-                this.destination = result.data.result[0]['目的地'][0]['text']
-                this.amount = result.data.result[0]['费用'][0]['text']
+                                if(result.data.result[0]['时间']){
+                    this.time = result.data.result[0]['时间'][0]['text']
+                }
+                
+                if(result.data.result[0]['出发地']){
+                    this.outset = result.data.result[0]['出发地'][0]['text']
+                }
+
+                if(result.data.result[0]['目的地']){
+                    this.destination = result.data.result[0]['目的地'][0]['text']
+                }
+
+                if(result.data.result[0]['费用']){
+                    this.amount = result.data.result[0]['费用'][0]['text']
+                }
             }
 
         },

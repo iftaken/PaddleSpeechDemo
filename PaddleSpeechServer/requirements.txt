@@ -2,9 +2,12 @@ aiofiles
 fastapi
 librosa
 numpy
-paddlenlp.egg
 pydantic
 scikit_learn
 SoundFile
 starlette
 uvicorn
+
+paddlespeech
+paddlenlp
+
