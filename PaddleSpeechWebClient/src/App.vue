@@ -1,28 +1,19 @@
 <script setup>
-// This starter template is using Vue 3 <script setup> SFCs
-// Check out https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup
-import Chat from './components/SubMenu/ChatBot/Chat.vue'
-import ASR from './components/SubMenu/ASR/ASR.vue'
-import TTS from './components/SubMenu/TTS/TTS.vue'
-import VPR from './components/SubMenu/Speaker/VPR.vue'
-import IE from './components/SubMenu/IE/IE.vue'
+import Experience from './components/Experience.vue'
+import Header from './components/Content/Header/Header.vue'
 </script>
 
 <template>
-  <Chat></Chat>
-  <ASR></ASR>
-  <TTS></TTS>
-  <VPR></VPR>
-  <IE></IE>
+  <div class="app">
+    <Header></Header>
+    <Experience></Experience>
+  </div>
+
+
 </template>
 
-<style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
-}
+<style style="less">
+.app {
+  background: url("assets/image/在线体验-背景@2x.png") no-repeat;
+};
 </style>

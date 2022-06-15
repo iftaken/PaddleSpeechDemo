@@ -5,13 +5,14 @@
 # 4. 接收NLP对话结果，返回TTS音频
 
 import base64
+import yaml
 import os
 import json
 import datetime
 import librosa
 import soundfile as sf
 import numpy as np
-
+import argparse
 import uvicorn
 import aiofiles
 from typing import Optional, List 
@@ -32,6 +33,22 @@ from src.SpeechBase.vpr import VPR
 from paddlespeech.server.engine.asr.online.asr_engine import PaddleASRConnectionHanddler
 from paddlespeech.server.utils.audio_process import float2pcm
 
+
+# 解析配置
+parser = argparse.ArgumentParser(
+        prog='PaddleSpeechDemo', add_help=True)
+
+parser.add_argument(
+        "--port",
+        action="store",
+        type=int,
+        help="port of the app",
+        default=8010,
+        required=False)
+
+args = parser.parse_args()
+port = args.port
+
 # 配置文件
 tts_config = "PaddleSpeech/demos/streaming_tts_server/conf/tts_online_application.yaml"
 asr_config = "PaddleSpeech/demos/streaming_asr_server/conf/ws_conformer_wenetspeech_application.yaml"
@@ -42,6 +59,7 @@ ie_model_path = "source/model"
 # 路径配置
 UPLOAD_PATH = "source/vpr"
 WAV_PATH = "source/wav"
+
 
 base_sources = [
     UPLOAD_PATH, WAV_PATH
@@ -57,8 +75,6 @@ manager = ConnectionManager()
 aumanager = AudioMannger(chatbot)
 aumanager.init()
 vpr = VPR(db_path, dim = 192, top_k = 5)
-# vpr.db.drop_table()
-# vpr.db.init_database()
 
 # 服务配置
 class NlpBase(BaseModel):
@@ -72,10 +88,6 @@ class Audios:
         self.audios = b""
 
 audios = Audios()
-
-
-
-
 
 ######################################################################
 ########################### ASR 服务 #################################
@@ -471,7 +483,7 @@ async def vpr_data(vprId: int):
         return {'status': False, 'msg': e}, 400
 
 if __name__ == '__main__':
-    uvicorn.run(app=app, host='0.0.0.0', port=8010)
+    uvicorn.run(app=app, host='0.0.0.0', port=port)
     
 
 

@@ -1,50 +1,185 @@
 # Paddle Speech Demo
 
+PaddleSpeechDemo是一个以PaddleSpeech的语音交互功能为主体开发的Demo展示项目，用于帮助大家更好的上手PaddleSpeech以及使用PaddleSpeech构建自己的应用。
+
+智能语音交互部分使用PaddleSpeech，对话以及信息抽取部分使用PaddleNLP，网页前端展示部分基于Vue3进行开发
+
+主要功能：
+
++ 语音聊天：PaddleSpeech的语音识别能力+语音合成能力，对话部分基于PaddleNLP的闲聊功能
++ 声纹识别：PaddleSpeech的声纹识别功能展示
++ 语音识别：支持【实时语音识别】，【端到端识别】，【音频文件识别】三种模式
++ 语音合成：支持【流式合成】与【端到端合成】两种方式
++ 语音指令：基于PaddleSpeech的语音识别能力与PaddleNLP的信息抽取，实现交通费的智能报销
+
+运行效果：
+
+ ![效果](docs/效果展示.png)
+
+## 安装
+
+### 拉取项目
+
+```
+# 拉取项目
+git clone https://github.com/iftaken/PaddleSpeechDemo.git
+
+# 进入项目
+cd PaddleSpeechDemo
+
+# 拉取PaddleSpeech项目
+git clone https://github.com/PaddlePaddle/PaddleSpeech.git
+```
+
+### 后端环境安装
+
+```
+# 安装环境
+cd PaddleSpeechServer
+pip install -r requirements.txt
+
+# 下载 ie 模型，针对地点进行微调，效果更好
+cd source
+mkdir model & cd model
+wget https://bj.bcebos.com/paddlenlp/applications/speech-cmd-analysis/finetune/model_state.pdparams
+```
+
+
+### 前端环境安装
+
+前端依赖node.js ，需要提前安装，确保npm可用
+
+```
+# 进入前端目录
+cd PaddleSpeechWebClient
+
+# 安装yarn，已经安装
+npm install -g yarn
+
+# 使用yarn安装前端依赖
+yarn install
+```
+
+
+## 启动服务
+
+### 开启后端服务
+
+```
+cd PaddleSpeechServer
+# 默认8010端口
+python main.py --port 8010
+```
+
+### 开启前端服务
+
+```
+cd PaddleSpeechWebClient
+yarn dev --port 8011
+```
+
+默认配置下，前端中配置的后台地址信息是localhost，确保后端服务器和前端在同一台机器上，不在一台机器的配置方式见下方的FAQ部分
+
+## Docker启动
+
+### 后端docker
+后端docker使用[paddlepaddle官方docker](https://www.paddlepaddle.org.cn/),这里演示CPU版本
+```
+
+# 拉取PaddleSpeech项目
+cd PaddleSpeechServer
+git clone https://github.com/PaddlePaddle/PaddleSpeech.git
+
+# 拉取镜像
+docker pull registry.baidubce.com/paddlepaddle/paddle:2.3.0
+
+# 启动容器
+docker run --name paddle -it -p 8010:8010 -v $PWD:/paddle registry.baidubce.com/paddlepaddle/paddle:2.3.0 /bin/bash
+
+# 进入容器
+cd /paddle
+
+# 安装依赖
+pip install -r requirements
+
+# 启动服务
+python main --port 8010
+
+```
+
+### 前端docker
+
+前端docker直接使用[node官方的docker](https://hub.docker.com/_/node)即可
+
+```shell
+docker pull node
+```
+
+镜像中安装依赖
+
+```shell
+cd PaddleSpeechWebClient
+# 映射外部8011端口
+docker run -it -p 8011:8011 -v $PWD:/paddle node:latest bin/bash
+# 进入容器中
+cd /paddle
+# 安装依赖
+yarn install
+# 启动前端
+yarn dev --port 8011
+```
+
+
+
+
+
+## FAQ 
+
+#### Q: 如何安装node.js
+
+A： node.js的安装可以参考[【菜鸟教程】](https://www.runoob.com/nodejs/nodejs-install-setup.html), 确保npm可用
+
+#### Q：后端如果部署在其它机器或者别的端口如何修改
+
+A：后端的配置地址有分散在两个文件中
+
+修改第一个文件`PaddleSpeechWebClient/vite.config.js`
+
+```json
+server: {
+    host: "0.0.0.0",
+    proxy: {
+      "/api": {
+        target: "http://localhost:8010",  // 这里改成后端所在接口
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ""),
+      },
+    },
+  }
+```
+
+修改第二个文件`PaddleSpeechWebClient/src/api/API.js`（Websocket代理配置失败，所以需要在这个文件中修改）
+
+```javascript
+// websocket （这里改成后端所在的接口）
+CHAT_SOCKET_RECORD: 'ws://localhost:8010/ws/asr/offlineStream', // ChatBot websocket 接口
+ASR_SOCKET_RECORD: 'ws://localhost:8010/ws/asr/onlineStream',  // Stream ASR 接口
+TTS_SOCKET_RECORD: 'ws://localhost:8010/ws/tts/online', // Stream TTS 接口
+```
+
+#### Q：后端以IP地址的形式，前端无法录音
+
+A：这里主要是游览器安全策略的限制，需要配置游览器后重启。游览器修改配置可参考[使用js-audio-recorder报浏览器不支持getUserMedia](https://blog.csdn.net/YRY_LIKE_YOU/article/details/113745273)
+
+
+
+
+## 参考资料
+
 vue实现录音参考资料：https://blog.csdn.net/qq_41619796/article/details/107865602#t1
 
 前端流式播放音频参考仓库：
 
 https://github.com/AnthumChris/fetch-stream-audio
+
 https://bm.enthuses.me/buffered.php?bref=6677
-
-## 前端启动
-
-```shell
-cd PaddleSpeechWebClient
-
-# 安装依赖
-yarn install
-
-# 测试
-yarn dev
-
-```
-
-
-## 后端启动
-
-```shell
-# 启动服务
-# 子模块初始化
-git submodule update --init --recursive
-
-# 安装 paddleSpeech
-cd PaddleSpeechServer/PaddleSpeech
-pip install .
-
-# 安装 paddleNLP
-cd PaddleSpeechServer/PaddleNLP
-pip install .
-
-# 下载 ie 模型
-cd PaddleSpeechServer/source
-mkdir model & cd model
-wget https://bj.bcebos.com/paddlenlp/applications/speech-cmd-analysis/finetune/model_state.pdparams
-
-# 启动 asr, tts, chat, ie, vpr 服务
-cd PaddleSpeechServer
-python main.py
-
-# 声纹识别服务
-```
-
