@@ -44,7 +44,7 @@ parser.add_argument(
         type=int,
         help="port of the app",
         default=8010,
-        required=True)
+        required=False)
 
 args = parser.parse_args()
 port = args.port
