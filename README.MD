@@ -49,7 +49,7 @@ wget https://bj.bcebos.com/paddlenlp/applications/speech-cmd-analysis/finetune/m
 
 ### 前端环境安装
 
-前端依赖node.js ，需要提前安装，确保npm可用
+前端依赖node.js ，需要提前安装，确保npm可用，npm测试版本8.3.1，建议下载[官网](https://nodejs.org/en/)稳定版的node.js
 
 ```
 # 进入前端目录
