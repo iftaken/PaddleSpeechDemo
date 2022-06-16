@@ -41,7 +41,8 @@ pip install -r requirements.txt
 
 # 下载 ie 模型，针对地点进行微调，效果更好
 cd source
-mkdir model & cd model
+mkdir model
+cd model
 wget https://bj.bcebos.com/paddlenlp/applications/speech-cmd-analysis/finetune/model_state.pdparams
 ```
 
@@ -171,6 +172,8 @@ TTS_SOCKET_RECORD: 'ws://localhost:8010/ws/tts/online', // Stream TTS 接口
 #### Q：后端以IP地址的形式，前端无法录音
 
 A：这里主要是游览器安全策略的限制，需要配置游览器后重启。游览器修改配置可参考[使用js-audio-recorder报浏览器不支持getUserMedia](https://blog.csdn.net/YRY_LIKE_YOU/article/details/113745273)
+
+chrome设置地址: chrome://flags/#unsafely-treat-insecure-origin-as-secure
 
 
 

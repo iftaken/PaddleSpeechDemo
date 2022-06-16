@@ -1,6 +1,5 @@
 # vpr Demo 没有使用 mysql 与 muilvs, 仅用于docker演示
 import logging
-from cv2 import UMAT_DATA_DEVICE_COPY_OBSOLETE
 import faiss
 from matplotlib import use
 import numpy as np
