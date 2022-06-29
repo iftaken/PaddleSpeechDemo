@@ -1,9 +1,12 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import { viteSingleFile } from "vite-plugin-singlefile"
+
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [vue(), viteSingleFile({ useRecommendedBuildConfig: false, removeViteModuleLoader: true })],
+  base: process.env.NODE_ENV === 'production' ? './' : '/',
   css: 
     { preprocessorOptions:
       { css: 
@@ -13,7 +16,7 @@ export default defineConfig({
       } 
     },
   build: {
-      assetsInlineLimit: '2048' // 2kb
+      assetsInlineLimit: '204800' // 2kb
   },
   server: {
     host: "0.0.0.0",

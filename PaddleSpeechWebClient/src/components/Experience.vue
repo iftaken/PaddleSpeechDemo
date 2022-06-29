@@ -22,21 +22,21 @@ import IET from './SubMenu/IE/IET.vue'
             className="experience_tabs"
             type="border-card"
           >
-            <el-tab-pane label="语音聊天" key="1">
+            <!-- <el-tab-pane label="语音聊天" key="1">
               <ChatT></ChatT>
-            </el-tab-pane>
-            <el-tab-pane label="声纹识别" key="2">
+            </el-tab-pane> -->
+            <!-- <el-tab-pane label="声纹识别" key="2">
              <VPRT></VPRT>
-            </el-tab-pane>
+            </el-tab-pane> -->
             <el-tab-pane label="语音识别" key="3">
             <ASRT></ASRT>
             </el-tab-pane>
-            <el-tab-pane label="语音合成" key="4">
+            <!-- <el-tab-pane label="语音合成" key="4">
             <TTST></TTST>
-            </el-tab-pane>
-            <el-tab-pane label="语音指令" key="5">
+            </el-tab-pane> -->
+            <!-- <el-tab-pane label="语音指令" key="5">
             <IET></IET>
-            </el-tab-pane>
+            </el-tab-pane> -->
           </el-tabs>
         </div>
       </div>

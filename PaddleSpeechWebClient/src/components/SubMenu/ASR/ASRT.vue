@@ -14,12 +14,12 @@ import EndToEndIdentification from "./EndToEnd/EndToEndIdentification.vue";
           <el-tab-pane label="实时语音识别" key="1">
             <RealTime />
           </el-tab-pane>
-          <el-tab-pane label="端到端识别" key="2">
+          <!-- <el-tab-pane label="端到端识别" key="2">
             <EndToEndIdentification />
-          </el-tab-pane>
-          <el-tab-pane label="音频文件识别" key="3">
+          </el-tab-pane> -->
+          <!-- <el-tab-pane label="音频文件识别" key="3">
             <AudioFileIdentification />
-          </el-tab-pane>
+          </el-tab-pane> -->
         </el-tabs>
       </div>
     </div>

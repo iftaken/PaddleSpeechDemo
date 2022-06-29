@@ -1,7 +1,13 @@
 <template>
+    <div class="server_input">
+        <el-input class="serverAddress" v-model="wsUrl" placeholder="Please input">
+            <template #prepend>ws://</template>
+        </el-input>
+        <el-button class="serverConnect" type="primary" v-on:click="connectServer()">连接</el-button>
+    </div>
+
     <div class="realTime">
       <div  class="public_recognition_speech">
-      
       <div v-if="onReco"> 
         <!-- 结束录音 -->
         <div @click="endRecorder()" class="endToEndIdentification_end_recorder_img">
@@ -37,7 +43,6 @@
 
 <script>
 import Recorder from 'js-audio-recorder'
-import { apiURL } from '../../../../api/API'
 
 const recorder = new Recorder({
   sampleBits: 16,                 // 采样位数，支持 8 或 16，默认是16
@@ -51,36 +56,55 @@ export default {
         return {
             onReco: false,
             asrResult: "",
-            wsUrl: "",
-            ws: ""
+            wsUrl: "127.0.0.1:8090/paddlespeech/asr/streaming",
+            ws: "",
         }
-    },
-    mounted () {
-        this.wsUrl = apiURL.ASR_SOCKET_RECORD
-        this.ws = new WebSocket(this.wsUrl)
-        if(this.ws.readyState === this.ws.CONNECTING){
-            this.$message.success("实时识别 Websocket 连接成功")
-        }
-        var _that = this
-        this.ws.addEventListener('message', function (event) {
-                var temp = JSON.parse(event.data);
-                // console.log('ws message', event.data)
-                if(temp.result && (temp.result != _that.streamAsrResult)){
-                    _that.asrResult = temp.result
-                    _that.$nextTick(()=>{})
-                }                
-        })
-
     },
     methods: {
+        // Connect Server
+        connectServer(){
+            if(!this.wsUrl){
+                this.$message.error("请输入URL地址")
+                return
+            } else {
+                console.log("wsUrl", this.wsUrl)
+
+                this.ws = new WebSocket("ws://" + this.wsUrl)
+                // 定义websocket连接方式
+                var _that = this
+                this.ws.addEventListener('message', function (event) {
+                        var temp = JSON.parse(event.data);
+                        if(temp.result && (temp.result != _that.streamAsrResult)){
+                            _that.asrResult = temp.result
+                            _that.$nextTick(()=>{})
+                        }
+                                        
+                });
+
+                //添加事件监听
+                this.ws.addEventListener('open', function () {
+                    _that.$message.success("Websocket建立连接成功")
+                });
+
+                //添加时间监听
+                this.ws.addEventListener('error', function () {
+                    _that.$message.error("Websocket连接失败")
+                });
+
+            }
+        },
+
         // 开始录音
         startRecorder(){
             // 检查 websocket 状态
-            // debugger
-            if(this.ws.readyState != this.ws.OPEN){
-                this.$message.error("websocket 链接失败，请检查链接地址是否正确")
+            if(!this.ws){
+                this.$message.error("请先连接后端服务")
                 return
             }
+            if(this.ws.readyState != 1){
+                this.$message.error("WebSocket未能成功连接，请检查服务是否正确")
+                return
+            }       
 
             this.onReco = true
 

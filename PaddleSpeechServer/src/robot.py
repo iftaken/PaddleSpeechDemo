@@ -59,8 +59,8 @@ class Robot:
         return result
     
 if __name__ == '__main__':
-    tts_config = "../PaddleSpeech/demos/streaming_tts_server/conf/tts_online_application.yaml"
-    asr_config = "../PaddleSpeech/demos/streaming_asr_server/conf/ws_conformer_application.yaml"
+    tts_config = "../conf/tts_online_application.yaml"
+    asr_config = "../conf/ws_conformer_wenetspeech_application_faster.yaml"
     demo_wav = "../source/demo/demo_16k.wav"
     ie_model_path = "../source/model"
     tts_wav = "../source/demo/tts.wav"

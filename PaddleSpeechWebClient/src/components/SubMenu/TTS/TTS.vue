@@ -388,7 +388,7 @@ export default {
                     &:nth-of-type(1) {
                         width: 20px;
                         height: 20px;
-                        background: url("../../../assets/image/ic_更换示例.svg") no-repeat;
+                        background: url("../../../assets/image/ic_更换示例.png") no-repeat;
                         background-position: center;
                         background-size: 20px 20px;
                         margin-right: 5px;
@@ -484,7 +484,7 @@ export default {
             .streaming_ing_img {
                 width: 16px;
                 height: 16px;
-                // background: url("../../../assets/image/ic_小-录制语音.svg");
+                // background: url("../../../assets/image/ic_小-录制语音.png");
                 // background-repeat: no-repeat;
                 // background-position: center;
                 // background-size: 16px 16px;
@@ -530,7 +530,7 @@ export default {
                 .streaming_suspended_img {
                     width: 16px;
                     height: 16px;
-                    background: url("../../../assets/image/ic_暂停（按钮）.svg");
+                    background: url("../../../assets/image/ic_暂停（按钮）.png");
                     background-repeat: no-repeat;
                     background-position: center;
                     background-size: 16px 16px;
@@ -571,7 +571,7 @@ export default {
             .streaming_continue_img {
                 width: 16px;
                 height: 16px;
-                background: url("../../../assets/image/ic_播放（按钮）.svg");
+                background: url("../../../assets/image/ic_播放（按钮）.png");
                 background-repeat: no-repeat;
                 background-position: center;
                 background-size: 16px 16px;
@@ -625,7 +625,7 @@ export default {
                 .end_to_end_ing_img {
                     width: 16px;
                     height: 16px;
-                    // background: url("../../../assets/image/ic_小-录制语音.svg");
+                    // background: url("../../../assets/image/ic_小-录制语音.png");
                     // background-repeat: no-repeat;
                     // background-position: center;
                     // background-size: 16px 16px;
@@ -669,7 +669,7 @@ export default {
                 .end_to_end_suspended_img {
                     width: 16px;
                     height: 16px;
-                    background: url("../../../assets/image/ic_暂停（按钮）.svg");
+                    background: url("../../../assets/image/ic_暂停（按钮）.png");
                     background-repeat: no-repeat;
                     background-position: center;
                     background-size: 16px 16px;
@@ -707,7 +707,7 @@ export default {
             .end_to_end_continue_img {
                 width: 16px;
                 height: 16px;
-                background: url("../../../assets/image/ic_播放（按钮）.svg");
+                background: url("../../../assets/image/ic_播放（按钮）.png");
                 background-repeat: no-repeat;
                 background-position: center;
                 background-size: 16px 16px;
